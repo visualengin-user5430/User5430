@@ -1,21 +1,25 @@
 package com.example.user5430;
 
-/*import java.util.ArrayList;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;*/
+import java.util.List;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import android.app.Activity;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-//import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-/*import android.view.View;
-import android.widget.ArrayAdapter;*/
+import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -23,10 +27,12 @@ import android.widget.TextView;
 
 
 public class MainActivity extends Activity {
+	  private final String url = "http://www.visual-engin.com/Web";
 	  private ProgressBar spinner;
 	  private ListView listview;
 	  private LinearLayout linearLayout;
-	  private TextView tV;
+	  private TextView textView;
+	  private boolean finished;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,53 +41,37 @@ public class MainActivity extends Activity {
         spinner = (ProgressBar)findViewById(R.id.progressBar1);
         listview = (ListView) findViewById(R.id.listView1);
         linearLayout = (LinearLayout)findViewById(R.id.linearLayout);
-        tV = (TextView)findViewById(R.id.textView1);
+        textView = (TextView)findViewById(R.id.textView1);
         if(!isOnline(this)){
-        	tV.setText("Internet connection not disponible");
+        	textView.setText("Internet connection not disponible");
         	spinner.setVisibility(View.GONE);
         }
         else{//isOnline//
-        	tV.setText("OK");
+        	textView.setText("connecting...");
+        	finished = true;
+        	( new ParseURL() ).execute(new String[]{url});
         }
         
-        /*String[] values = new String[] { "Android", "iPhone", "WindowsMobile",
-                "Blackberry", "WebOS", "Ubuntu", "Windows7", "Max OS X",
-                "Linux", "OS/2", "Ubuntu", "Windows7", "Max OS X", "Linux",
-                "OS/2", "Ubuntu", "Windows7", "Max OS X", "Linux", "OS/2",
-                "Android", "iPhone", "WindowsMobile" };
-
-            final ArrayList<String> list = new ArrayList<String>();
-            for (int i = 0; i < values.length; ++i) {
-              list.add(values[i]);
-            }
-            final StableArrayAdapter adapter = new StableArrayAdapter(this,
-                   R.layout.custom_list_view, list);
-                listview.setAdapter(adapter);*/
     }
-    /*private class StableArrayAdapter extends ArrayAdapter<String> {
+    
+    @Override
+    public void onResume() {
+        super.onResume();
 
-	    HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
-
-	    public StableArrayAdapter(Context context, int textViewResourceId,
-	        List<String> objects) {
-	      super(context, textViewResourceId, objects);
-	      for (int i = 0; i < objects.size(); ++i) {
-	        mIdMap.put(objects.get(i), i);
-	      }
-	    }
-
-	    @Override
-	    public long getItemId(int position) {
-	      String item = getItem(position);
-	      return mIdMap.get(item);
-	    }
-
-	    @Override
-	    public boolean hasStableIds() {
-	      return true;
-	    }
-
-	  }*/
+        // try to connect again if it wasn't possible before
+       if (!finished) {
+    	   spinner.setVisibility(View.VISIBLE);
+           if(!isOnline(this)){
+           	textView.setText("Internet connection not disponible");
+           	spinner.setVisibility(View.GONE);
+           }
+           else{//isOnline//
+           	textView.setText("connecting...");
+           	finished = true;
+           	( new ParseURL() ).execute(new String[]{url});
+           }
+        }
+    }
 
 
     @Override
@@ -103,6 +93,73 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
     
+    private class ParseURL extends AsyncTask<String, Void, String> {
+    	 StableArrayAdapter adapter;
+  	     @Override
+  	     protected String doInBackground(String... strings) {
+  	         String s ="";
+  	         try {
+  	        	 // Connect and download the HTML page
+  	             Log.d("STABL", "Connecting to ["+strings[0]+"]");
+  	             Document doc  = Jsoup.connect(strings[0]).get();
+  	             Log.d("STABL", "Connected to ["+strings[0]+"]");
+  	             // Get document (HTML page) title
+  	             String title = doc.title();
+  	             Log.d("OKtit", "Title ["+title+"]");
+  	             // Get 'a' tagged elements 
+  	             Elements links = doc.select("a[href]");
+  	             ArrayList<String> list = new ArrayList<String>();
+  	             // retrieve the URL from the 'a' elements
+  	             for (Element linkElm : links)	{
+  	            	 Log.d("GEt", "reading link");
+  	            	 String link = linkElm.attr("href");
+  	            	 list.add(link);
+  	             }
+  	             // prepares the listview with a custom layout to present the results
+  	              adapter = new StableArrayAdapter(getApplicationContext(),
+  	                  R.layout.custom_list_view, list);
+  	              listview.setAdapter(adapter);
+  	         }
+  	         catch(Throwable t) {
+  	             t.printStackTrace();
+  	         }
+  	         return s;
+  	     }
+
+  	     @Override
+  	     protected void onPostExecute(String s) {
+  	         super.onPostExecute(s);
+  	         textView.setVisibility(View.INVISIBLE);
+  	         spinner.setVisibility(View.INVISIBLE);
+  	         linearLayout.setVisibility(View.VISIBLE);
+  	     }
+    }
+    
+    private class StableArrayAdapter extends ArrayAdapter<String> {
+
+	    HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
+
+	    public StableArrayAdapter(Context context, int textViewResourceId,
+	        List<String> objects) {
+	      super(context, textViewResourceId, objects);
+	      for (int i = 0; i < objects.size(); ++i) {
+	        mIdMap.put(objects.get(i), i);
+	      }
+	    }
+
+	    @Override
+	    public long getItemId(int position) {
+	      String item = getItem(position);
+	      return mIdMap.get(item);
+	    }
+
+	    @Override
+	    public boolean hasStableIds() {
+	      return true;
+	    }
+	  }
+
+    
     private boolean isOnline(Context context) {
     	ConnectivityManager cm =
     	        (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -110,11 +167,7 @@ public class MainActivity extends Activity {
     	NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
     	boolean isConnected = activeNetwork != null &&
     	                      activeNetwork.isConnected();
-    	//Log.d("CON", "active connection: " + isConnected);
+    	Log.d("CON", "active connection: " + isConnected);
     	return isConnected;
     }
-    /*public void sends(View view) {
-        spinner.setVisibility(View.GONE);
-  	  	linearLayout.setVisibility(View.VISIBLE);
-    }*/
 }
