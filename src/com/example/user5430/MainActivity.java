@@ -26,6 +26,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 
+/**
+ * Main and only Activity that contains all the logic of the APP.
+ * @author User5430
+ * @version 1.0.0
+ */
 public class MainActivity extends Activity {
 	  private final String url = "http://www.visual-engin.com/Web";
 	  private ProgressBar spinner;
@@ -42,22 +47,26 @@ public class MainActivity extends Activity {
         listview = (ListView) findViewById(R.id.listView1);
         linearLayout = (LinearLayout)findViewById(R.id.linearLayout);
         textView = (TextView)findViewById(R.id.textView1);
-        if(!isOnline(this)){
+        
+        if(!isOnline(this)) {
         	textView.setText("Internet connection not disponible");
         	spinner.setVisibility(View.GONE);
         }
-        else{//isOnline//
+        else {//isOnline//
         	textView.setText("connecting...");
         	finished = true;
         	( new ParseURL() ).execute(new String[]{url});
         }
-        
     }
     
+    /**
+     * When the Activity is resumed shows the result or in 
+     * case of not having achieved a connection, tries to 
+     * connect again.
+     */
     @Override
     public void onResume() {
         super.onResume();
-
         // try to connect again if it wasn't possible before
        if (!finished) {
     	   spinner.setVisibility(View.VISIBLE);
@@ -93,8 +102,20 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
     
+   /**
+    * Uses a separate thread to connect to the webpage and retrieve
+    * the information. Once it has the info, uses 'JSoup' library to 
+    * extract the 'a' tagged elements.
+    * The results are shown in a listview.
+    */
     private class ParseURL extends AsyncTask<String, Void, String> {
-    	 StableArrayAdapter adapter;
+    	 public StableArrayAdapter adapter;
+    	 /**
+    	  * Background process that connect and treats with
+    	  * the webpage.
+    	  * @param strings	first element of the array is the URL
+    	  * @return	empty string
+    	  */
   	     @Override
   	     protected String doInBackground(String... strings) {
   	         String s ="";
@@ -111,8 +132,8 @@ public class MainActivity extends Activity {
   	             ArrayList<String> list = new ArrayList<String>();
   	             // retrieve the URL from the 'a' elements
   	             for (Element linkElm : links)	{
-  	            	 Log.d("GEt", "reading link");
   	            	 String link = linkElm.attr("href");
+  	            	 Log.d("GEt", "link: " + link);
   	            	 list.add(link);
   	             }
   	             // prepares the listview with a custom layout to present the results
@@ -125,7 +146,11 @@ public class MainActivity extends Activity {
   	         }
   	         return s;
   	     }
-
+    	 /**
+    	  * Once the webpage has been treated, shows
+    	  * the results on screen.
+    	  * @param s	empty string
+    	  */
   	     @Override
   	     protected void onPostExecute(String s) {
   	         super.onPostExecute(s);
@@ -135,31 +160,45 @@ public class MainActivity extends Activity {
   	     }
     }
     
+	 /**
+	  * Custom adapter for the ListView.
+	  * @param strings	first element of the array is the URL
+	  * @return	empty string
+	  */
     private class StableArrayAdapter extends ArrayAdapter<String> {
 
-	    HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
+	    HashMap<String, Integer> map = new HashMap<String, Integer>();
 
+	   	/**
+	   	* Constructor.
+	   	* Inserts each list object in a map for an easy access.
+	   	* @param context	Activity context
+	   	* @param textViewResourceId	Resource ID of the custom adapter
+	   	* @param objects	List of objects
+	   	*/
 	    public StableArrayAdapter(Context context, int textViewResourceId,
 	        List<String> objects) {
 	      super(context, textViewResourceId, objects);
 	      for (int i = 0; i < objects.size(); ++i) {
-	        mIdMap.put(objects.get(i), i);
+	    	  map.put(objects.get(i), i);
 	      }
 	    }
-
 	    @Override
 	    public long getItemId(int position) {
 	      String item = getItem(position);
-	      return mIdMap.get(item);
+	      return map.get(item);
 	    }
-
 	    @Override
 	    public boolean hasStableIds() {
 	      return true;
 	    }
 	  }
 
-    
+   	/**
+   	* Identify if the device is connected to some network.
+   	* @param context	Activity context
+   	* @return	boolean	true if exists the device is connected
+   	*/
     private boolean isOnline(Context context) {
     	ConnectivityManager cm =
     	        (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);

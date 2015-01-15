@@ -3,6 +3,10 @@ Problem 3
 
 <h2>Version History</h2>
 
+<b>Javadoc</b>
+<ul>
+    <li>Javadoc generated</li>
+</ul>
 <b>APP logic</b>
 <ul>
     <li>jspoup-1.8.1.jar added to libs folder</li>
