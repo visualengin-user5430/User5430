@@ -32,31 +32,28 @@ import android.widget.TextView;
  * @version 1.0.0
  */
 public class MainActivity extends Activity {
-	  private final String url = "http://www.visual-engin.com/Web";
+	  private final static String url = "http://www.visual-engin.com/Web";
 	  private ProgressBar spinner;
 	  private ListView listview;
 	  private LinearLayout linearLayout;
 	  private TextView textView;
-	  private boolean finished;
+	  /**
+	   * flag indicating if the content has been received.
+	   */
+	  public static boolean isFinished = false;
+	  public StableArrayAdapter adapter;
+	  public static ArrayList<String> list = new ArrayList<String>();
+	  
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
         spinner = (ProgressBar)findViewById(R.id.progressBar1);
+        spinner.setVisibility(View.GONE);
         listview = (ListView) findViewById(R.id.listView1);
         linearLayout = (LinearLayout)findViewById(R.id.linearLayout);
         textView = (TextView)findViewById(R.id.textView1);
-        
-        if(!isOnline(this)) {
-        	textView.setText("Internet connection not disponible");
-        	spinner.setVisibility(View.GONE);
-        }
-        else {//isOnline//
-        	textView.setText("connecting...");
-        	finished = true;
-        	( new ParseURL() ).execute(new String[]{url});
-        }
     }
     
     /**
@@ -68,20 +65,24 @@ public class MainActivity extends Activity {
     public void onResume() {
         super.onResume();
         // try to connect again if it wasn't possible before
-       if (!finished) {
+        if (!isFinished) {
     	   spinner.setVisibility(View.VISIBLE);
            if(!isOnline(this)){
-           	textView.setText("Internet connection not disponible");
-           	spinner.setVisibility(View.GONE);
+           		textView.setText("Internet connection not disponible");
+           		spinner.setVisibility(View.GONE);
            }
            else{//isOnline//
-           	textView.setText("connecting...");
-           	finished = true;
-           	( new ParseURL() ).execute(new String[]{url});
+           		textView.setText("connecting...");
+           		( new ParseURL() ).execute(new String[]{url});
            }
         }
+        else{
+        	adapter = new StableArrayAdapter(getApplicationContext(),
+	                  R.layout.custom_list_view, list);
+        	listview.setAdapter(adapter);
+        	linearLayout.setVisibility(View.VISIBLE);
+        }
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -109,7 +110,8 @@ public class MainActivity extends Activity {
     * The results are shown in a listview.
     */
     private class ParseURL extends AsyncTask<String, Void, String> {
-    	 public StableArrayAdapter adapter;
+    	// public StableArrayAdapter adapter;
+
     	 /**
     	  * Background process that connect and treats with
     	  * the webpage.
@@ -118,22 +120,19 @@ public class MainActivity extends Activity {
     	  */
   	     @Override
   	     protected String doInBackground(String... strings) {
-  	         String s ="";
   	         try {
   	        	 // Connect and download the HTML page
   	             Log.d("STABL", "Connecting to ["+strings[0]+"]");
   	             Document doc  = Jsoup.connect(strings[0]).get();
   	             Log.d("STABL", "Connected to ["+strings[0]+"]");
   	             // Get document (HTML page) title
-  	             String title = doc.title();
-  	             Log.d("OKtit", "Title ["+title+"]");
+  	             Log.d("OKtit", "Title ["+doc.title()+"]");
   	             // Get 'a' tagged elements 
   	             Elements links = doc.select("a[href]");
-  	             ArrayList<String> list = new ArrayList<String>();
   	             // retrieve the URL from the 'a' elements
   	             for (Element linkElm : links)	{
   	            	 String link = linkElm.attr("href");
-  	            	 Log.d("GEt", "link: " + link);
+  	            	 Log.d("GET", "link: " + link);
   	            	 list.add(link);
   	             }
   	             // prepares the listview with a custom layout to present the results
@@ -144,7 +143,7 @@ public class MainActivity extends Activity {
   	         catch(Throwable t) {
   	             t.printStackTrace();
   	         }
-  	         return s;
+  	         return "";
   	     }
     	 /**
     	  * Once the webpage has been treated, shows
@@ -154,19 +153,19 @@ public class MainActivity extends Activity {
   	     @Override
   	     protected void onPostExecute(String s) {
   	         super.onPostExecute(s);
-  	         textView.setVisibility(View.INVISIBLE);
-  	         spinner.setVisibility(View.INVISIBLE);
+  	         isFinished = true;
+  	         textView.setVisibility(View.GONE);
+  	         spinner.setVisibility(View.GONE);
   	         linearLayout.setVisibility(View.VISIBLE);
   	     }
     }
     
-	 /**
-	  * Custom adapter for the ListView.
-	  * @param strings	first element of the array is the URL
-	  * @return	empty string
-	  */
+	/**
+	 * Custom adapter for the ListView.
+	 * @param strings	first element of the array is the URL
+	 * @return	empty string
+	 */
     private class StableArrayAdapter extends ArrayAdapter<String> {
-
 	    HashMap<String, Integer> map = new HashMap<String, Integer>();
 
 	   	/**
@@ -192,14 +191,14 @@ public class MainActivity extends Activity {
 	    public boolean hasStableIds() {
 	      return true;
 	    }
-	  }
+	}
 
    	/**
    	* Identify if the device is connected to some network.
    	* @param context	Activity context
-   	* @return	boolean	true if exists the device is connected
+   	* @return	boolean	true if exists internet connection
    	*/
-    private boolean isOnline(Context context) {
+    public boolean isOnline(Context context) {
     	ConnectivityManager cm =
     	        (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
     	 

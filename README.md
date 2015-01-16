@@ -3,6 +3,11 @@ Problem 3
 
 <h2>Version History</h2>
 
+<b>Improvements</b>
+<ul>
+    <li>onResume fixed</li>
+    <li>Portrait screen</li>
+</ul>
 <b>Javadoc</b>
 <ul>
     <li>Javadoc generated</li>
